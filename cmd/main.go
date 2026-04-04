@@ -7,130 +7,13 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/dto"
-	openbrowser "github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/infra/web/openBrowser"
 	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/infra/web/request"
+	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/usecase"
 )
-
-func getToken() (string, error) {
-	form := url.Values{}
-	form.Set("client_id", request.ClientID)
-	form.Set("scope", "copilot")
-
-	req, err := http.NewRequest("POST", request.GithubDeviceCodeURL, strings.NewReader(form.Encode()))
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	var deviceCode dto.DeviceCodeResponse
-	if err := json.NewDecoder(resp.Body).Decode(&deviceCode); err != nil {
-		return "", err
-	}
-	if deviceCode.DeviceCode == "" {
-		return "", fmt.Errorf("falha ao obter device code")
-	}
-
-	authURL := deviceCode.VerificationURIComplete
-	if authURL == "" {
-		authURL = deviceCode.VerificationURI
-	}
-
-	fmt.Println("🔐 Abrindo navegador para autorizar...")
-	_ = openbrowser.OpenBrowser(authURL)
-
-	fmt.Printf("🔑 Código: %s\n", deviceCode.UserCode)
-	fmt.Printf("🌐 URL: %s\n", authURL)
-	fmt.Println("⏳ Aguardando autorização...")
-
-	var githubToken string
-	interval := deviceCode.Interval
-	if interval <= 0 {
-		interval = 5
-	}
-
-	for {
-		time.Sleep(time.Duration(interval) * time.Second)
-
-		form := url.Values{}
-		form.Set("client_id", request.ClientID)
-		form.Set("device_code", deviceCode.DeviceCode)
-		form.Set("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
-
-		req, err := http.NewRequest("POST", request.GithubTokenURL, strings.NewReader(form.Encode()))
-		if err != nil {
-			return "", err
-		}
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-		resp1, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return "", err
-		}
-		defer resp1.Body.Close()
-
-		var tokenResp dto.AccessTokenResponse
-		if err := json.NewDecoder(resp1.Body).Decode(&tokenResp); err != nil {
-			return "", err
-		}
-
-		if tokenResp.AccessToken != "" {
-			githubToken = tokenResp.AccessToken
-			fmt.Println("✅ GitHub autorizado!")
-			break
-		}
-
-		switch tokenResp.Error {
-		case "", "authorization_pending":
-			continue
-		case "slow_down":
-			interval += 5
-		default:
-			return "", fmt.Errorf("erro OAuth: %s", tokenResp.Error)
-		}
-	}
-
-	req, err = http.NewRequest("GET", request.CopilotTokenURL, nil)
-	if err != nil {
-		return "", err
-	}
-	req.Header.Set("Authorization", "token "+githubToken)
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Editor-Version", "vscode/1.85.0")
-	req.Header.Set("Editor-Plugin-Version", "copilot/1.138.0")
-	req.Header.Set("User-Agent", "GithubCopilot/1.138.0")
-
-	resp2, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp2.Body.Close()
-
-	var copilotToken dto.CopilotTokenResponse
-	if err := json.NewDecoder(resp2.Body).Decode(&copilotToken); err != nil {
-		return "", err
-	}
-
-	if copilotToken.Token == "" {
-		return "", fmt.Errorf("falha ao obter token do Copilot")
-	}
-
-	fmt.Printf("✅ Copilot token obtido. Expira em: %s\n\n", time.Unix(copilotToken.ExpiresAt, 0).Format(time.RFC3339))
-	return copilotToken.Token, nil
-}
 
 func ask(token, question string) error {
 	reqBody := dto.ChatRequest{
@@ -208,7 +91,7 @@ func ask(token, question string) error {
 }
 
 func main() {
-	token, err := getToken()
+	token, err := usecase.GetToken()
 	if err != nil {
 		fmt.Println("❌ Erro no login:", err)
 		os.Exit(1)
