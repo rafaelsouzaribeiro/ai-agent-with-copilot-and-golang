@@ -13,20 +13,10 @@ import (
 	"time"
 
 	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/dto"
+	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/entity"
 	openbrowser "github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/infra/web/openBrowser"
 	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/infra/web/request"
 )
-
-type Message struct {
-	Role    string `json:"role"`
-	Content string `json:"content"`
-}
-
-type ChatRequest struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
-	Stream   bool      `json:"stream"`
-}
 
 func getToken() (string, error) {
 	form := url.Values{}
@@ -144,9 +134,9 @@ func getToken() (string, error) {
 }
 
 func ask(token, question string) error {
-	reqBody := ChatRequest{
+	reqBody := dto.ChatRequest{
 		Model: "gpt-4o",
-		Messages: []Message{
+		Messages: []entity.Message{
 			{Role: "system", Content: "Você é um assistente útil. Responda em português."},
 			{Role: "user", Content: question},
 		},
