@@ -9,20 +9,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
-	"runtime"
 	"strings"
 	"time"
 
 	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/dto"
-)
-
-const (
-	clientID            = "Iv1.b507a08c87ecfe98"
-	githubDeviceCodeURL = "https://github.com/login/device/code"
-	githubTokenURL      = "https://github.com/login/oauth/access_token"
-	copilotTokenURL     = "https://api.github.com/copilot_internal/v2/token"
-	copilotChatURL      = "https://api.githubcopilot.com/chat/completions"
+	openbrowser "github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/infra/web/openBrowser"
+	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/infra/web/request"
 )
 
 type Message struct {
@@ -36,29 +28,12 @@ type ChatRequest struct {
 	Stream   bool      `json:"stream"`
 }
 
-func openBrowser(target string) error {
-	var cmd *exec.Cmd
-
-	switch runtime.GOOS {
-	case "darwin":
-		cmd = exec.Command("open", target)
-	case "linux":
-		cmd = exec.Command("xdg-open", target)
-	case "windows":
-		cmd = exec.Command("rundll32", "url.dll,FileProtocolHandler", target)
-	default:
-		return fmt.Errorf("sistema não suportado para abrir navegador")
-	}
-
-	return cmd.Start()
-}
-
 func getToken() (string, error) {
 	form := url.Values{}
-	form.Set("client_id", clientID)
+	form.Set("client_id", request.ClientID)
 	form.Set("scope", "copilot")
 
-	req, err := http.NewRequest("POST", githubDeviceCodeURL, strings.NewReader(form.Encode()))
+	req, err := http.NewRequest("POST", request.GithubDeviceCodeURL, strings.NewReader(form.Encode()))
 	if err != nil {
 		return "", err
 	}
@@ -85,7 +60,7 @@ func getToken() (string, error) {
 	}
 
 	fmt.Println("🔐 Abrindo navegador para autorizar...")
-	_ = openBrowser(authURL)
+	_ = openbrowser.OpenBrowser(authURL)
 
 	fmt.Printf("🔑 Código: %s\n", deviceCode.UserCode)
 	fmt.Printf("🌐 URL: %s\n", authURL)
@@ -101,11 +76,11 @@ func getToken() (string, error) {
 		time.Sleep(time.Duration(interval) * time.Second)
 
 		form := url.Values{}
-		form.Set("client_id", clientID)
+		form.Set("client_id", request.ClientID)
 		form.Set("device_code", deviceCode.DeviceCode)
 		form.Set("grant_type", "urn:ietf:params:oauth:grant-type:device_code")
 
-		req, err := http.NewRequest("POST", githubTokenURL, strings.NewReader(form.Encode()))
+		req, err := http.NewRequest("POST", request.GithubTokenURL, strings.NewReader(form.Encode()))
 		if err != nil {
 			return "", err
 		}
@@ -139,7 +114,7 @@ func getToken() (string, error) {
 		}
 	}
 
-	req, err = http.NewRequest("GET", copilotTokenURL, nil)
+	req, err = http.NewRequest("GET", request.CopilotTokenURL, nil)
 	if err != nil {
 		return "", err
 	}
@@ -183,7 +158,7 @@ func ask(token, question string) error {
 		return err
 	}
 
-	req, err := http.NewRequest("POST", copilotChatURL, bytes.NewBuffer(bodyBytes))
+	req, err := http.NewRequest("POST", request.CopilotChatURL, bytes.NewBuffer(bodyBytes))
 	if err != nil {
 		return err
 	}
