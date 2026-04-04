@@ -1,7 +1,5 @@
 package dto
 
-import "github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/entity"
-
 type DeviceCodeResponse struct {
 	DeviceCode              string `json:"device_code"`
 	UserCode                string `json:"user_code"`
@@ -22,7 +20,12 @@ type CopilotTokenResponse struct {
 }
 
 type ChatRequest struct {
-	Model    string           `json:"model"`
-	Messages []entity.Message `json:"messages"`
-	Stream   bool             `json:"stream"`
+	Model    string    `json:"model"`
+	Messages []Message `json:"messages"`
+	Stream   bool      `json:"stream"`
+}
+
+type Message struct {
+	Role    string `json:"role"`
+	Content string `json:"content"`
 }
