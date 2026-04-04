@@ -13,6 +13,8 @@ import (
 	"runtime"
 	"strings"
 	"time"
+
+	"github.com/rafaelsouzaribeiro/ai-agent-with-copilot-and-golang/internal/dto"
 )
 
 const (
@@ -22,25 +24,6 @@ const (
 	copilotTokenURL     = "https://api.github.com/copilot_internal/v2/token"
 	copilotChatURL      = "https://api.githubcopilot.com/chat/completions"
 )
-
-type DeviceCodeResponse struct {
-	DeviceCode              string `json:"device_code"`
-	UserCode                string `json:"user_code"`
-	VerificationURI         string `json:"verification_uri"`
-	VerificationURIComplete string `json:"verification_uri_complete"`
-	Interval                int    `json:"interval"`
-	ExpiresIn               int    `json:"expires_in"`
-}
-
-type AccessTokenResponse struct {
-	AccessToken string `json:"access_token"`
-	Error       string `json:"error"`
-}
-
-type CopilotTokenResponse struct {
-	Token     string `json:"token"`
-	ExpiresAt int64  `json:"expires_at"`
-}
 
 type Message struct {
 	Role    string `json:"role"`
@@ -88,17 +71,12 @@ func getToken() (string, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	var deviceCode DeviceCodeResponse
-	if err := json.Unmarshal(body, &deviceCode); err != nil {
+	var deviceCode dto.DeviceCodeResponse
+	if err := json.NewDecoder(resp.Body).Decode(&deviceCode); err != nil {
 		return "", err
 	}
 	if deviceCode.DeviceCode == "" {
-		return "", fmt.Errorf("falha ao obter device code: %s", string(body))
+		return "", fmt.Errorf("falha ao obter device code")
 	}
 
 	authURL := deviceCode.VerificationURIComplete
@@ -134,19 +112,14 @@ func getToken() (string, error) {
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-		resp, err := http.DefaultClient.Do(req)
+		resp1, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return "", err
 		}
+		defer resp1.Body.Close()
 
-		body, err := io.ReadAll(resp.Body)
-		resp.Body.Close()
-		if err != nil {
-			return "", err
-		}
-
-		var tokenResp AccessTokenResponse
-		if err := json.Unmarshal(body, &tokenResp); err != nil {
+		var tokenResp dto.AccessTokenResponse
+		if err := json.NewDecoder(resp1.Body).Decode(&tokenResp); err != nil {
 			return "", err
 		}
 
@@ -176,23 +149,19 @@ func getToken() (string, error) {
 	req.Header.Set("Editor-Plugin-Version", "copilot/1.138.0")
 	req.Header.Set("User-Agent", "GithubCopilot/1.138.0")
 
-	resp, err = http.DefaultClient.Do(req)
+	resp2, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return "", err
 	}
-	defer resp.Body.Close()
+	defer resp2.Body.Close()
 
-	body, err = io.ReadAll(resp.Body)
-	if err != nil {
+	var copilotToken dto.CopilotTokenResponse
+	if err := json.NewDecoder(resp2.Body).Decode(&copilotToken); err != nil {
 		return "", err
 	}
 
-	var copilotToken CopilotTokenResponse
-	if err := json.Unmarshal(body, &copilotToken); err != nil {
-		return "", err
-	}
 	if copilotToken.Token == "" {
-		return "", fmt.Errorf("falha ao obter token do Copilot: %s", string(body))
+		return "", fmt.Errorf("falha ao obter token do Copilot")
 	}
 
 	fmt.Printf("✅ Copilot token obtido. Expira em: %s\n\n", time.Unix(copilotToken.ExpiresAt, 0).Format(time.RFC3339))
