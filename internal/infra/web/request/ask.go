@@ -42,7 +42,7 @@ func Ask(token, question string) (*io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("erro na API: %d - %s", resp.StatusCode, string(body))
