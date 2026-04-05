@@ -1,12 +1,14 @@
 # AI Agent com GitHub Copilot (Go)
+# Só responde pergunta sobre golang
 
 Exemplo em Go para:
 
 1. abrir o navegador para autorização no GitHub  
 2. mostrar o código no terminal  
-3. obter token do GitHub (Device Flow)  
-4. trocar pelo token do Copilot  
-5. enviar perguntas e receber respostas no terminal
+3. pegar o código do terminal e colocar  no browser
+4. obter token do GitHub (Device Flow)  
+5. trocar pelo token do Copilot  
+6. enviar perguntas e receber respostas no terminal
 
 ---
 

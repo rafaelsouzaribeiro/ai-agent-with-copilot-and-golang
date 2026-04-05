@@ -14,7 +14,13 @@ func Ask(token, question string) (*io.ReadCloser, error) {
 	reqBody := dto.ChatRequest{
 		Model: "gpt-4o",
 		Messages: []dto.Message{
-			{Role: "system", Content: "Você é um assistente útil. Responda em português."},
+			{
+				Role: "system",
+				Content: "Você é um assistente especializado apenas em Golang. " +
+					"Responda sempre em português. " +
+					"Se a pergunta não for sobre Go (linguagem, tooling, testes, performance, libs, padrões, APIs em Go), " +
+					"recuse educadamente dizendo: 'Só posso responder sobre Golang.'",
+			},
 			{Role: "user", Content: question},
 		},
 		Stream: true,
