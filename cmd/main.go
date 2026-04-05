@@ -16,6 +16,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	copilotToken, err := usecase.GetCopilotToken(token)
+	if err != nil {
+		fmt.Println("❌ Erro ao obter token do Copilot:", err)
+		os.Exit(1)
+	}
+
 	scanner := bufio.NewScanner(os.Stdin)
 	for {
 		fmt.Print("👤 Você: ")
@@ -31,7 +37,7 @@ func main() {
 			break
 		}
 
-		if err := usecase.Ask(token, question); err != nil {
+		if err := usecase.Ask(copilotToken, question); err != nil {
 			fmt.Println("❌ Erro:", err)
 		}
 		fmt.Println()
