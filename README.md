@@ -1,31 +1,31 @@
-# AI Agent with GitHub Copilot (Go)
-# Only answers questions about Golang
+# Agente de IA com GitHub Copilot (Go)
+# Responde apenas perguntas sobre Golang
 
-A Go example that:
+Um exemplo em Go que:
 
-1. Opens the browser for GitHub authorization
-2. Displays the code in the terminal
-3. Takes the code from the terminal and enters it in the browser
-4. Obtains the GitHub token (Device Flow)
-5. Exchanges it for the Copilot token
-6. Sends questions and receives answers in the terminal
+1. Abre o navegador para autorização no GitHub
+2. Exibe o código no terminal
+3. Pega o código no terminal e o insere no navegador
+4. Obtém o token do GitHub (Device Flow)
+5. Troca pelo token do Copilot
+6. Envia perguntas e recebe respostas no terminal
 
 ---
 
-## Prerequisites
+## Pré-requisitos
 
 - Go `1.21+`
-- GitHub account with **Copilot active**
-- Internet access to:
+- Conta GitHub com **Copilot ativo**
+- Acesso à internet para:
   - `github.com`
   - `api.github.com`
   - `api.githubcopilot.com`
 
 ---
 
-## How to run
+## Como executar
 
-- Go to the /cmd folder and run:
+- Vá para a pasta `/cmd` e execute:
 
 ```bash
 go run main.go
